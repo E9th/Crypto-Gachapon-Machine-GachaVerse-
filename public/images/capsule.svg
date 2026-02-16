@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="top" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffb3ba;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff8a9e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bottom" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fff5f5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffe0e6;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="shine" cx="35%" cy="30%" r="50%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.6)" />
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0)" />
+    </radialGradient>
+  </defs>
+  <!-- Bottom half -->
+  <circle cx="100" cy="100" r="80" fill="url(#bottom)" stroke="#2d3748" stroke-width="3"/>
+  <!-- Top half -->
+  <path d="M 20 100 A 80 80 0 0 1 180 100 Z" fill="url(#top)" stroke="#2d3748" stroke-width="3"/>
+  <!-- Dividing line -->
+  <line x1="20" y1="100" x2="180" y2="100" stroke="#2d3748" stroke-width="3"/>
+  <!-- Shine -->
+  <circle cx="100" cy="100" r="78" fill="url(#shine)"/>
+  <!-- Star decoration -->
+  <text x="100" y="80" text-anchor="middle" font-size="28" fill="#fff">&#9733;</text>
+  <!-- Question mark -->
+  <text x="100" y="140" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="32" fill="#e8a0b0">?</text>
+</svg>
