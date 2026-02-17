@@ -11,5 +11,6 @@ INSERT INTO items (name, rarity, image_url, drop_rate) VALUES
   ('Crystal Koi',   'Rare',   '/images/nft-rare_03.png',   0.05),
   ('Golden Dragon', 'SSR',    '/images/nft-ssr_01.png',    0.02),
   ('Phoenix Lord',  'SSR',    '/images/nft-ssr_02.png',    0.02),
-  ('Galactic Neko', 'SSR',    '/images/nft-ssr_03.png',    0.01)
+  ('Galactic Neko', 'SSR',    '/images/nft-ssr_03.png',    0.01),
+  ('Void Emperor',  'UR',     '/images/nft-ur_01.png',     0.005)
 ON CONFLICT DO NOTHING;

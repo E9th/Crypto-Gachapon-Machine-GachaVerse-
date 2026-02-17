@@ -19,6 +19,8 @@ export function rollGacha(items: GachaItem[]): GachaItem {
 
 export function getRarityColor(rarity: string): string {
   switch (rarity) {
+    case "UR":
+      return "hsl(270, 70%, 65%)"
     case "SSR":
       return "hsl(45, 80%, 68%)"
     case "Rare":
@@ -30,6 +32,8 @@ export function getRarityColor(rarity: string): string {
 
 export function getRarityBorderClass(rarity: string): string {
   switch (rarity) {
+    case "UR":
+      return "border-purple-400"
     case "SSR":
       return "border-accent"
     case "Rare":

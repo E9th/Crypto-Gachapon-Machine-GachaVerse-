@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Coins, ArrowRightLeft, Plus, Loader2, ExternalLink, Check, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { GVCOIN } from "@/lib/economy"
@@ -16,11 +16,34 @@ export function GVCoinPanel({ walletAddress, isConnected, balance, onBalanceUpda
   const [isOpen, setIsOpen] = useState(false)
   const [exchangeAmount, setExchangeAmount] = useState("")
   const [isExchanging, setIsExchanging] = useState(false)
+  const [gvcBalance, setGvcBalance] = useState(0)
   const [result, setResult] = useState<{
     success: boolean
     message: string
     txHash?: string
   } | null>(null)
+
+  // Fetch GVC balance from exchange history
+  useEffect(() => {
+    if (!walletAddress || !isConnected) {
+      setGvcBalance(0)
+      return
+    }
+
+    fetch(`/api/gvcoin/exchange?wallet=${walletAddress}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.exchanges) {
+          const total = data.exchanges.reduce(
+            (sum: number, ex: { gvc_amount: number; status: string }) =>
+              sum + (ex.status !== "mint_failed" ? Number(ex.gvc_amount) : 0),
+            0
+          )
+          setGvcBalance(total)
+        }
+      })
+      .catch(() => {})
+  }, [walletAddress, isConnected])
 
   const gachaAmount = Math.max(0, Math.floor(Number(exchangeAmount) || 0))
   const gvcOutput = gachaAmount >= GVCOIN.GACHA_PER_GVCOIN
@@ -48,6 +71,7 @@ export function GVCoinPanel({ walletAddress, isConnected, balance, onBalanceUpda
 
       if (data.success) {
         onBalanceUpdate?.(data.new_balance)
+        setGvcBalance((prev) => prev + data.gvc_received)
         setExchangeAmount("")
         setResult({
           success: true,
@@ -117,6 +141,9 @@ export function GVCoinPanel({ walletAddress, isConnected, balance, onBalanceUpda
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <span className="font-mono text-sm font-bold text-card-foreground">
+            {gvcBalance > 0 ? `${gvcBalance} GVC` : ""}
+          </span>
           <span className={cn(
             "text-[8px] px-1.5 py-0.5 rounded-full font-mono",
             contractReady

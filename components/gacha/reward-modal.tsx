@@ -16,6 +16,7 @@ const rarityConfig: Record<string, { label: string; bg: string; border: string; 
   Common: { label: "COMMON", bg: "bg-muted", border: "border-border", text: "text-muted-foreground" },
   Rare: { label: "RARE", bg: "bg-secondary", border: "border-secondary", text: "text-secondary-foreground" },
   SSR: { label: "SSR", bg: "bg-accent", border: "border-accent", text: "text-accent-foreground" },
+  UR: { label: "ULTRA RARE", bg: "bg-purple-500", border: "border-purple-400", text: "text-white" },
 }
 
 function Confetti() {
@@ -126,7 +127,7 @@ export function RewardModal({ item, isOpen, onClose, onSpinAgain }: RewardModalP
               Congratulations!
             </h2>
 
-            <div className={`relative w-36 h-36 sm:w-48 sm:h-48 rounded-2xl border-2 border-foreground overflow-hidden shadow-hard mb-3 sm:mb-4 ${item.rarity === "SSR" ? "animate-float will-change-transform" : ""}`}>
+            <div className={`relative w-36 h-36 sm:w-48 sm:h-48 rounded-2xl border-2 border-foreground overflow-hidden shadow-hard mb-3 sm:mb-4 ${item.rarity === "SSR" || item.rarity === "UR" ? "animate-float will-change-transform" : ""}`}>
               <Image
                 src={item.image_url}
                 alt={item.name}

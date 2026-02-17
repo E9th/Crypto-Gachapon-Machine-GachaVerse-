@@ -11,13 +11,14 @@ interface ControlPanelProps {
   isSpinning: boolean
   isConnected: boolean
   onSpin: () => void
-  dropRates: { Common: number; Rare: number; SSR: number }
+  dropRates: { Common: number; Rare: number; SSR: number; UR: number }
 }
 
 const rarityColors: Record<string, string> = {
   Common: "bg-muted text-muted-foreground",
   Rare: "bg-secondary text-secondary-foreground",
   SSR: "bg-accent text-accent-foreground",
+  UR: "bg-purple-500 text-white",
 }
 
 export function ControlPanel({
@@ -64,6 +65,12 @@ export function ControlPanel({
               <span className="text-xs sm:text-sm font-sans text-card-foreground">SSR</span>
               <span className="text-[10px] sm:text-xs font-sans px-1.5 sm:px-2 py-0.5 rounded-full bg-accent text-accent-foreground border border-border">
                 {dropRates.SSR}%
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-sans text-card-foreground">UR</span>
+              <span className="text-[10px] sm:text-xs font-sans px-1.5 sm:px-2 py-0.5 rounded-full bg-purple-500 text-white border border-purple-400">
+                {dropRates.UR}%
               </span>
             </div>
           </div>

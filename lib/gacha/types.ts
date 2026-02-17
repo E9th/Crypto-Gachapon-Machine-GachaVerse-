@@ -1,4 +1,4 @@
-export type Rarity = "Common" | "Rare" | "SSR"
+export type Rarity = "Common" | "Rare" | "SSR" | "UR"
 
 export interface GachaItem {
   id: string

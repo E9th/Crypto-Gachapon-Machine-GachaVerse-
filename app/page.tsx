@@ -209,8 +209,13 @@ export default function GachaPage() {
             .filter((i) => i.rarity === "SSR")
             .reduce((sum, i) => sum + i.drop_rate, 0) * 100
         ),
+        UR: Math.round(
+          items
+            .filter((i) => i.rarity === "UR")
+            .reduce((sum, i) => sum + i.drop_rate, 0) * 100 * 10
+        ) / 10,
       }
-    : { Common: 70, Rare: 25, SSR: 5 }
+    : { Common: 70, Rare: 25, SSR: 5, UR: 0.5 }
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col">

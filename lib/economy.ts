@@ -82,6 +82,7 @@ export const CONVERTER = {
     Common: { energy: 15, coins: 2 },
     Rare: { energy: 30, coins: 8 },
     SSR: { energy: 60, coins: 25 },
+    UR: { energy: 120, coins: 60 },
   } as Record<string, { energy: number; coins: number }>,
   /** Cooldown between conversions (ms) — "Overheating" mechanic */
   COOLDOWN_MS: 3_000,
@@ -100,6 +101,7 @@ export const SELL_PRICES: Record<string, number> = {
   Common: 5,
   Rare: 20,
   SSR: 50,
+  UR: 150,
 }
 
 // ── GVCoin Token ──────────────────────────────────────

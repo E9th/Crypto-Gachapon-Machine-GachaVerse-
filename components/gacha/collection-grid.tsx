@@ -24,6 +24,7 @@ const rarityBadge: Record<string, string> = {
   Common: "bg-muted text-muted-foreground",
   Rare: "bg-secondary text-secondary-foreground",
   SSR: "bg-accent text-accent-foreground",
+  UR: "bg-purple-500 text-white",
 }
 
 export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps) {
@@ -32,7 +33,7 @@ export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps
   const [sellResult, setSellResult] = useState<{ success: boolean; message: string } | null>(null)
   const [convertingId, setConvertingId] = useState<string | null>(null)
   const [convertConfirmId, setConvertConfirmId] = useState<string | null>(null)
-  const [dissolveId, setDissolveId] = useState<string | null>(null)
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set())
 
   const handleSellClick = (historyId: string) => {
     if (confirmId === historyId) {
@@ -54,6 +55,7 @@ export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps
     const result = await onSell(historyId)
     setSellingId(null)
     if (result?.success) {
+      setRemovedIds((prev) => new Set(prev).add(historyId))
       setSellResult({ success: true, message: `Sold ${result.sold_item} for ${result.sell_price} GACHA!` })
       setTimeout(() => setSellResult(null), 3000)
     } else {
@@ -76,15 +78,15 @@ export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps
     if (!onConvert) return
     setConvertingId(historyId)
     setConvertConfirmId(null)
-    setDissolveId(historyId) // Start dissolve animation
 
-    // Wait for animation
+    // Short animation delay
     await new Promise((r) => setTimeout(r, 600))
 
     const result = await onConvert(historyId, rewardType)
     setConvertingId(null)
 
     if (result?.success) {
+      setRemovedIds((prev) => new Set(prev).add(historyId))
       const rewardLabel = result.reward_type === "energy"
         ? `+${result.reward_amount} Energy`
         : `+${result.reward_amount} GACHA`
@@ -94,14 +96,13 @@ export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps
       })
       setTimeout(() => setSellResult(null), 3000)
     } else {
-      setDissolveId(null)
       setSellResult({ success: false, message: result?.error || "Failed to convert" })
       setTimeout(() => setSellResult(null), 3000)
     }
   }
 
-  // Filter out dissolved items to prevent empty grid slots
-  const visibleItems = items.filter((item) => dissolveId !== item.historyId)
+  // Filter out sold/converted items to prevent empty grid slots
+  const visibleItems = items.filter((item) => !removedIds.has(item.historyId))
 
   return (
     <section className="px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-8">

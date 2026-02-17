@@ -25,7 +25,7 @@ export function MachineDisplay({ isSpinning, showCapsule }: MachineDisplayProps)
             alt="Gachapon vending machine"
             fill
             sizes="(max-width: 640px) 280px, 384px"
-            className="object-cover"
+            className="object-contain"
             priority
           />
 
@@ -58,11 +58,11 @@ export function MachineDisplay({ isSpinning, showCapsule }: MachineDisplayProps)
         </div>
       </div>
 
-      {/* Price Tag */}
-      <div className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 border-2 border-foreground rounded-full bg-accent shadow-hard-sm">
-        <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-foreground" />
-        <span className="font-sans text-xs sm:text-sm text-accent-foreground">1 Spin = {SPIN.COST} GACHA</span>
-      </div>
+      {/* Price Label */}
+      <p className="font-sans text-[10px] sm:text-xs text-muted-foreground tracking-wide">
+        <Coins className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline-block mr-1 -mt-0.5" />
+        1 Spin = {SPIN.COST} GACHA
+      </p>
     </div>
   )
 }
