@@ -2,18 +2,22 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Package, DollarSign, Loader2 } from "lucide-react"
+import { Package, DollarSign, Loader2, Recycle, Zap, Coins } from "lucide-react"
 import type { GachaItem } from "@/lib/gacha/types"
-
-const SELL_PRICES: Record<string, number> = {
-  Common: 5,
-  Rare: 20,
-  SSR: 50,
-}
+import { SELL_PRICES, CONVERTER } from "@/lib/economy"
 
 interface CollectionGridProps {
   items: Array<GachaItem & { historyId: string }>
   onSell?: (historyId: string) => Promise<{ success?: boolean; error?: string; sold_item?: string; sell_price?: number } | undefined>
+  onConvert?: (historyId: string, rewardType: "energy" | "coins") => Promise<{
+    success?: boolean
+    error?: string
+    converted_item?: string
+    reward_type?: string
+    reward_amount?: number
+    new_balance?: number
+    new_energy?: number
+  } | undefined>
 }
 
 const rarityBadge: Record<string, string> = {
@@ -22,10 +26,13 @@ const rarityBadge: Record<string, string> = {
   SSR: "bg-accent text-accent-foreground",
 }
 
-export function CollectionGrid({ items, onSell }: CollectionGridProps) {
+export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps) {
   const [sellingId, setSellingId] = useState<string | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)
   const [sellResult, setSellResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [convertingId, setConvertingId] = useState<string | null>(null)
+  const [convertConfirmId, setConvertConfirmId] = useState<string | null>(null)
+  const [dissolveId, setDissolveId] = useState<string | null>(null)
 
   const handleSellClick = (historyId: string) => {
     if (confirmId === historyId) {
@@ -51,6 +58,44 @@ export function CollectionGrid({ items, onSell }: CollectionGridProps) {
       setTimeout(() => setSellResult(null), 3000)
     } else {
       setSellResult({ success: false, message: result?.error || "Failed to sell" })
+      setTimeout(() => setSellResult(null), 3000)
+    }
+  }
+
+  const handleConvertClick = (historyId: string) => {
+    if (convertConfirmId === historyId) {
+      handleConfirmConvert(historyId, "energy")
+    } else {
+      setConvertConfirmId(historyId)
+      // Auto-dismiss after 4s
+      setTimeout(() => setConvertConfirmId((prev) => (prev === historyId ? null : prev)), 4000)
+    }
+  }
+
+  const handleConfirmConvert = async (historyId: string, rewardType: "energy" | "coins") => {
+    if (!onConvert) return
+    setConvertingId(historyId)
+    setConvertConfirmId(null)
+    setDissolveId(historyId) // Start dissolve animation
+
+    // Wait for animation
+    await new Promise((r) => setTimeout(r, 600))
+
+    const result = await onConvert(historyId, rewardType)
+    setConvertingId(null)
+
+    if (result?.success) {
+      const rewardLabel = result.reward_type === "energy"
+        ? `+${result.reward_amount} Energy`
+        : `+${result.reward_amount} GACHA`
+      setSellResult({
+        success: true,
+        message: `Converted ${result.converted_item} → ${rewardLabel}`,
+      })
+      setTimeout(() => setSellResult(null), 3000)
+    } else {
+      setDissolveId(null)
+      setSellResult({ success: false, message: result?.error || "Failed to convert" })
       setTimeout(() => setSellResult(null), 3000)
     }
   }
@@ -91,7 +136,9 @@ export function CollectionGrid({ items, onSell }: CollectionGridProps) {
             {items.map((item) => (
               <div
                 key={item.historyId}
-                className="group border-2 border-foreground rounded-xl sm:rounded-2xl bg-card overflow-hidden shadow-hard-sm hover:shadow-hard transition-all hover:-translate-y-1"
+                className={`group border-2 border-foreground rounded-xl sm:rounded-2xl bg-card overflow-hidden shadow-hard-sm hover:shadow-hard transition-all hover:-translate-y-1 ${
+                  dissolveId === item.historyId ? "animate-dissolve" : ""
+                }`}
               >
                 <div className="relative aspect-square overflow-hidden">
                   <Image
@@ -109,34 +156,81 @@ export function CollectionGrid({ items, onSell }: CollectionGridProps) {
                 </div>
                 <div className="p-2 sm:p-3">
                   <p className="font-sans text-[11px] sm:text-xs text-card-foreground truncate mb-1.5 sm:mb-2">{item.name}</p>
-                  <button
-                    onClick={() => handleSellClick(item.historyId)}
-                    disabled={sellingId === item.historyId}
-                    className={`w-full flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-sans transition-colors touch-manipulation ${
-                      confirmId === item.historyId
-                        ? "border-red-400 bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400"
-                        : sellingId === item.historyId
-                          ? "border-border bg-muted text-muted-foreground cursor-not-allowed"
-                          : "border-border text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {sellingId === item.historyId ? (
-                      <>
-                        <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />
-                        Selling...
-                      </>
-                    ) : confirmId === item.historyId ? (
-                      <>
-                        <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        Confirm Sell ({SELL_PRICES[item.rarity]} GACHA)?
-                      </>
-                    ) : (
-                      <>
-                        <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        Sell ({SELL_PRICES[item.rarity]} GACHA)
-                      </>
-                    )}
-                  </button>
+                  
+                  {/* Action buttons row */}
+                  <div className="flex gap-1">
+                    {/* Sell button */}
+                    <button
+                      onClick={() => handleSellClick(item.historyId)}
+                      disabled={sellingId === item.historyId || convertingId === item.historyId}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-sans transition-colors touch-manipulation ${
+                        confirmId === item.historyId
+                          ? "border-red-400 bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400"
+                          : sellingId === item.historyId
+                            ? "border-border bg-muted text-muted-foreground cursor-not-allowed"
+                            : "border-border text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {sellingId === item.historyId ? (
+                        <>
+                          <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />
+                          <span className="hidden sm:inline">Selling...</span>
+                        </>
+                      ) : confirmId === item.historyId ? (
+                        <>
+                          <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          {SELL_PRICES[item.rarity]}?
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <span className="hidden sm:inline">Sell</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Convert button - Matter Converter */}
+                    <button
+                      onClick={() => handleConvertClick(item.historyId)}
+                      disabled={convertingId === item.historyId || sellingId === item.historyId}
+                      className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-sans transition-colors touch-manipulation ${
+                        convertConfirmId === item.historyId
+                          ? "border-cyan-400 bg-cyan-50 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-400"
+                          : convertingId === item.historyId
+                            ? "border-border bg-muted text-muted-foreground cursor-not-allowed"
+                            : "border-border text-muted-foreground hover:bg-cyan-50 hover:border-cyan-300 hover:text-cyan-600 dark:hover:bg-cyan-950 dark:hover:text-cyan-400"
+                      }`}
+                    >
+                      {convertingId === item.historyId ? (
+                        <>
+                          <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />
+                          <span className="hidden sm:inline">Converting...</span>
+                        </>
+                      ) : convertConfirmId === item.historyId ? (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleConfirmConvert(item.historyId, "energy") }}
+                            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-900 hover:bg-cyan-200 dark:hover:bg-cyan-800"
+                          >
+                            <Zap className="w-2.5 h-2.5" />
+                            <span>+{CONVERTER.REWARDS[item.rarity]?.energy || 15}</span>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleConfirmConvert(item.historyId, "coins") }}
+                            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900 hover:bg-yellow-200 dark:hover:bg-yellow-800"
+                          >
+                            <Coins className="w-2.5 h-2.5" />
+                            <span>+{CONVERTER.REWARDS[item.rarity]?.coins || 2}</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <Recycle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <span className="hidden sm:inline">Convert</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

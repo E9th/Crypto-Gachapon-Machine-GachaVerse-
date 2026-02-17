@@ -7,6 +7,7 @@ import { MachineDisplay } from "@/components/gacha/machine-display"
 import { ControlPanel } from "@/components/gacha/control-panel"
 import { RewardModal } from "@/components/gacha/reward-modal"
 import { CollectionGrid } from "@/components/gacha/collection-grid"
+import { EtherReactor } from "@/components/gacha/ether-reactor"
 import { useWallet } from "@/hooks/use-wallet"
 import type { GachaItem } from "@/lib/gacha/types"
 
@@ -146,6 +147,38 @@ export default function GachaPage() {
     }
   }, [wallet.address])
 
+  // Convert an item (Matter Converter)
+  const handleConvert = useCallback(async (historyId: string, rewardType: "energy" | "coins") => {
+    if (!wallet.address) return
+    try {
+      const res = await fetch("/api/inventory/convert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wallet_address: wallet.address,
+          spin_history_id: historyId,
+          reward_type: rewardType,
+        }),
+      })
+      const result = await res.json()
+      if (result.success) {
+        if (result.new_balance !== undefined) {
+          setBalance(result.new_balance)
+        }
+        mutate(`/api/history?wallet=${wallet.address}`)
+      }
+      return result
+    } catch {
+      return { error: "Network error" }
+    }
+  }, [wallet.address])
+
+  // Callback for reactor balance updates
+  const handleReactorBalanceUpdate = useCallback((newBalance: number) => {
+    setBalance(newBalance)
+    mutateBalance()
+  }, [mutateBalance])
+
   // Compute drop rates from items data (multiply by 100 for percentage display)
   const dropRates = items
     ? {
@@ -217,7 +250,14 @@ export default function GachaPage() {
       </div>
 
       {/* Collection */}
-      <CollectionGrid items={wonItems} onSell={handleSell} />
+      <CollectionGrid items={wonItems} onSell={handleSell} onConvert={handleConvert} />
+
+      {/* Ether Reactor Widget */}
+      <EtherReactor
+        walletAddress={wallet.address}
+        isConnected={wallet.isConnected}
+        onBalanceUpdate={handleReactorBalanceUpdate}
+      />
 
       {/* Reward Modal */}
       <RewardModal
