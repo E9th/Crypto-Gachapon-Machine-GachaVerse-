@@ -107,17 +107,4 @@ export function validateFields<T extends Record<string, unknown>>(
   return null
 }
 
-/**
- * Get sell price based on item rarity
- */
-export function getSellPrice(rarity: string): number {
-  switch (rarity) {
-    case "SSR":
-      return 50
-    case "Rare":
-      return 20
-    case "Common":
-    default:
-      return 5
-  }
-}
+// Sell prices now in lib/economy.ts — use SELL_PRICES from there

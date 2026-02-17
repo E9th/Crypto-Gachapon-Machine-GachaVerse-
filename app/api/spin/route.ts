@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { rollGacha } from "@/lib/gacha/engine"
 import { isValidEthAddress, rateLimit } from "@/lib/security"
+import { SPIN } from "@/lib/economy"
 
-const SPIN_COST = 10
+const SPIN_COST = SPIN.COST
 
 export async function POST(request: Request) {
   const supabase = await createClient()

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { isValidEthAddress, rateLimit } from "@/lib/security"
-import { REACTOR } from "@/lib/economy"
+import { REACTOR, getUpgradeForLevel } from "@/lib/economy"
 
 /**
  * GET /api/reactor/energy?wallet=0x...
@@ -57,11 +57,13 @@ export async function GET(request: Request) {
     })
   }
 
-  // Calculate regenerated energy since last update
+  // Calculate regenerated energy since last update (with level bonus)
   const now = new Date()
   const lastRegen = new Date(data.last_regen_at)
   const elapsedSec = (now.getTime() - lastRegen.getTime()) / 1000
-  const regenAmount = elapsedSec * REACTOR.REGEN_PER_SECOND
+  const upgrade = getUpgradeForLevel(data.level)
+  const regenRate = REACTOR.REGEN_PER_SECOND + upgrade.regenBonus
+  const regenAmount = elapsedSec * regenRate
   const maxEnergy = Number(data.max_energy)
   const currentEnergy = Math.min(maxEnergy, Number(data.energy) + regenAmount)
 
@@ -82,7 +84,7 @@ export async function GET(request: Request) {
     max_energy: maxEnergy,
     level: data.level,
     total_harvested: Number(data.total_harvested),
-    regen_rate: REACTOR.REGEN_PER_SECOND,
+    regen_rate: regenRate,
     cooldown_until: data.cooldown_until,
   })
 }

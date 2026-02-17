@@ -100,18 +100,21 @@ export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps
     }
   }
 
+  // Filter out dissolved items to prevent empty grid slots
+  const visibleItems = items.filter((item) => dissolveId !== item.historyId)
+
   return (
-    <section className="px-4 sm:px-6 py-6 sm:py-8">
+    <section className="px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center gap-2 mb-4 sm:mb-6">
           <Package className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           <h2 className="font-sans text-lg sm:text-xl text-foreground">My Collection</h2>
           <span className="ml-auto text-xs sm:text-sm font-sans text-muted-foreground">
-            {items.length} {items.length === 1 ? "item" : "items"}
+            {visibleItems.length} {visibleItems.length === 1 ? "item" : "items"}
           </span>
         </div>
 
-        {/* Sell result toast */}
+        {/* Result toast */}
         {sellResult && (
           <div
             className={`mb-4 p-3 rounded-xl border-2 font-sans text-xs sm:text-sm text-center animate-slide-up ${
@@ -124,7 +127,7 @@ export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps
           </div>
         )}
 
-        {items.length === 0 ? (
+        {visibleItems.length === 0 ? (
           <div className="border-2 border-dashed border-border rounded-2xl p-8 sm:p-12 flex flex-col items-center justify-center">
             <Package className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground/50 mb-2 sm:mb-3" />
             <p className="font-sans text-sm text-muted-foreground text-center">
@@ -133,107 +136,114 @@ export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {items.map((item) => (
-              <div
-                key={item.historyId}
-                className={`group border-2 border-foreground rounded-xl sm:rounded-2xl bg-card overflow-hidden shadow-hard-sm hover:shadow-hard transition-all hover:-translate-y-1 ${
-                  dissolveId === item.historyId ? "animate-dissolve" : ""
-                }`}
-              >
-                <div className="relative aspect-square overflow-hidden">
-                  <Image
-                    src={item.image_url}
-                    alt={item.name}
-                    fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                    className="object-cover"
-                  />
-                  <span
-                    className={`absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-[9px] sm:text-[10px] font-sans px-1.5 sm:px-2 py-0.5 rounded-full border border-foreground ${rarityBadge[item.rarity]}`}
-                  >
-                    {item.rarity}
-                  </span>
-                </div>
-                <div className="p-2 sm:p-3">
-                  <p className="font-sans text-[11px] sm:text-xs text-card-foreground truncate mb-1.5 sm:mb-2">{item.name}</p>
-                  
-                  {/* Action buttons row */}
-                  <div className="flex gap-1">
-                    {/* Sell button */}
-                    <button
-                      onClick={() => handleSellClick(item.historyId)}
-                      disabled={sellingId === item.historyId || convertingId === item.historyId}
-                      className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-sans transition-colors touch-manipulation ${
-                        confirmId === item.historyId
-                          ? "border-red-400 bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400"
-                          : sellingId === item.historyId
-                            ? "border-border bg-muted text-muted-foreground cursor-not-allowed"
-                            : "border-border text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      {sellingId === item.historyId ? (
-                        <>
-                          <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />
-                          <span className="hidden sm:inline">Selling...</span>
-                        </>
-                      ) : confirmId === item.historyId ? (
-                        <>
-                          <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                          {SELL_PRICES[item.rarity]}?
-                        </>
-                      ) : (
-                        <>
-                          <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                          <span className="hidden sm:inline">Sell</span>
-                        </>
-                      )}
-                    </button>
+            {visibleItems.map((item) => {
+              const isConfirmingSell = confirmId === item.historyId
+              const isSelling = sellingId === item.historyId
+              const isConfirmingConvert = convertConfirmId === item.historyId
+              const isConverting = convertingId === item.historyId
+              const isBusy = isSelling || isConverting
 
-                    {/* Convert button - Matter Converter */}
-                    <button
-                      onClick={() => handleConvertClick(item.historyId)}
-                      disabled={convertingId === item.historyId || sellingId === item.historyId}
-                      className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-sans transition-colors touch-manipulation ${
-                        convertConfirmId === item.historyId
-                          ? "border-cyan-400 bg-cyan-50 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-400"
-                          : convertingId === item.historyId
-                            ? "border-border bg-muted text-muted-foreground cursor-not-allowed"
-                            : "border-border text-muted-foreground hover:bg-cyan-50 hover:border-cyan-300 hover:text-cyan-600 dark:hover:bg-cyan-950 dark:hover:text-cyan-400"
-                      }`}
+              return (
+                <div
+                  key={item.historyId}
+                  className="group border-2 border-foreground rounded-xl sm:rounded-2xl bg-card overflow-hidden shadow-hard-sm hover:shadow-hard transition-all hover:-translate-y-1"
+                >
+                  <div className="relative aspect-square overflow-hidden">
+                    <Image
+                      src={item.image_url}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                      className="object-cover"
+                    />
+                    <span
+                      className={`absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-[9px] sm:text-[10px] font-sans px-1.5 sm:px-2 py-0.5 rounded-full border border-foreground ${rarityBadge[item.rarity]}`}
                     >
-                      {convertingId === item.historyId ? (
-                        <>
-                          <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />
-                          <span className="hidden sm:inline">Converting...</span>
-                        </>
-                      ) : convertConfirmId === item.historyId ? (
-                        <div className="flex gap-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleConfirmConvert(item.historyId, "energy") }}
-                            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-900 hover:bg-cyan-200 dark:hover:bg-cyan-800"
-                          >
-                            <Zap className="w-2.5 h-2.5" />
-                            <span>+{CONVERTER.REWARDS[item.rarity]?.energy || 15}</span>
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleConfirmConvert(item.historyId, "coins") }}
-                            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900 hover:bg-yellow-200 dark:hover:bg-yellow-800"
-                          >
-                            <Coins className="w-2.5 h-2.5" />
-                            <span>+{CONVERTER.REWARDS[item.rarity]?.coins || 2}</span>
-                          </button>
+                      {item.rarity}
+                    </span>
+                  </div>
+                  <div className="p-2 sm:p-3">
+                    <p className="font-sans text-[11px] sm:text-xs text-card-foreground truncate mb-1.5 sm:mb-2">{item.name}</p>
+
+                    {/* Convert confirm row — replaces action buttons when active */}
+                    {isConfirmingConvert ? (
+                      <div className="flex gap-1">
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleConfirmConvert(item.historyId, "energy")}
+                          onKeyDown={(e) => e.key === "Enter" && handleConfirmConvert(item.historyId, "energy")}
+                          className="flex-1 flex items-center justify-center gap-0.5 py-1 sm:py-1.5 rounded-lg border border-cyan-400 bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 text-[9px] sm:text-[10px] font-sans cursor-pointer hover:bg-cyan-100 dark:hover:bg-cyan-900 transition-colors touch-manipulation select-none"
+                        >
+                          <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <span>+{CONVERTER.REWARDS[item.rarity]?.energy || 15}</span>
                         </div>
-                      ) : (
-                        <>
-                          <Recycle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                          <span className="hidden sm:inline">Convert</span>
-                        </>
-                      )}
-                    </button>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleConfirmConvert(item.historyId, "coins")}
+                          onKeyDown={(e) => e.key === "Enter" && handleConfirmConvert(item.historyId, "coins")}
+                          className="flex-1 flex items-center justify-center gap-0.5 py-1 sm:py-1.5 rounded-lg border border-yellow-400 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300 text-[9px] sm:text-[10px] font-sans cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors touch-manipulation select-none"
+                        >
+                          <Coins className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <span>+{CONVERTER.REWARDS[item.rarity]?.coins || 2}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Normal action buttons */
+                      <div className="flex gap-1">
+                        {/* Sell button */}
+                        <button
+                          onClick={() => handleSellClick(item.historyId)}
+                          disabled={isBusy}
+                          className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-sans transition-colors touch-manipulation ${
+                            isConfirmingSell
+                              ? "border-red-400 bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400"
+                              : isSelling
+                                ? "border-border bg-muted text-muted-foreground cursor-not-allowed"
+                                : "border-border text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {isSelling ? (
+                            <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />
+                          ) : isConfirmingSell ? (
+                            <>
+                              <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                              <span>{SELL_PRICES[item.rarity]}?</span>
+                            </>
+                          ) : (
+                            <>
+                              <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                              <span className="hidden sm:inline">Sell</span>
+                            </>
+                          )}
+                        </button>
+
+                        {/* Convert button */}
+                        <button
+                          onClick={() => handleConvertClick(item.historyId)}
+                          disabled={isBusy}
+                          className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-sans transition-colors touch-manipulation ${
+                            isConverting
+                              ? "border-border bg-muted text-muted-foreground cursor-not-allowed"
+                              : "border-border text-muted-foreground hover:bg-cyan-50 hover:border-cyan-300 hover:text-cyan-600 dark:hover:bg-cyan-950 dark:hover:text-cyan-400"
+                          }`}
+                        >
+                          {isConverting ? (
+                            <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />
+                          ) : (
+                            <>
+                              <Recycle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                              <span className="hidden sm:inline">Convert</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

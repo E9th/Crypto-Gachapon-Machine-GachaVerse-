@@ -3,6 +3,7 @@
 import { Zap, Trophy, Sparkles } from "lucide-react"
 import Image from "next/image"
 import type { GachaItem } from "@/lib/gacha/types"
+import { SPIN } from "@/lib/economy"
 
 interface ControlPanelProps {
   balance: number
@@ -72,9 +73,9 @@ export function ControlPanel({
       {/* Spin Button */}
       <button
         onClick={onSpin}
-        disabled={isSpinning || !isConnected || balance < 10}
+        disabled={isSpinning || !isConnected || balance < SPIN.COST}
         className={`relative w-full py-3 sm:py-4 px-6 sm:px-8 rounded-2xl border-2 border-foreground font-sans text-base sm:text-lg transition-all touch-manipulation ${
-          isSpinning || !isConnected || balance < 10
+          isSpinning || !isConnected || balance < SPIN.COST
             ? "bg-muted text-muted-foreground cursor-not-allowed shadow-hard-sm"
             : "bg-primary text-primary-foreground shadow-hard hover:shadow-hard-lg active:translate-x-[4px] active:translate-y-[4px] active:shadow-none animate-pulse-glow"
         }`}
@@ -82,7 +83,7 @@ export function ControlPanel({
         <span className="flex items-center justify-center gap-2">
           <Zap className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" />
           <span className="truncate">
-            {isSpinning ? "Spinning..." : !isConnected ? "Connect Wallet First" : balance < 10 ? "Not Enough GACHA" : "SPIN NOW"}
+            {isSpinning ? "Spinning..." : !isConnected ? "Connect Wallet First" : balance < SPIN.COST ? "Not Enough GACHA" : "SPIN NOW"}
           </span>
         </span>
       </button>

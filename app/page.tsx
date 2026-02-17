@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import useSWR, { mutate } from "swr"
 import { Header } from "@/components/gacha/header"
 import { MachineDisplay } from "@/components/gacha/machine-display"
@@ -8,10 +8,10 @@ import { ControlPanel } from "@/components/gacha/control-panel"
 import { RewardModal } from "@/components/gacha/reward-modal"
 import { CollectionGrid } from "@/components/gacha/collection-grid"
 import { EtherReactor } from "@/components/gacha/ether-reactor"
+import { GVCoinPanel } from "@/components/gacha/gvcoin-panel"
 import { useWallet } from "@/hooks/use-wallet"
+import { SPIN } from "@/lib/economy"
 import type { GachaItem } from "@/lib/gacha/types"
-
-const SPIN_COST = 10
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -22,13 +22,40 @@ export default function GachaPage() {
   const [showCapsule, setShowCapsule] = useState(false)
   const [rewardItem, setRewardItem] = useState<(GachaItem & { historyId?: string }) | null>(null)
   const [showReward, setShowReward] = useState(false)
+  const registeredRef = useRef(false)
 
   // Fetch items pool (for drop rate display)
   const { data: items } = useSWR<GachaItem[]>("/api/items", fetcher)
 
+  // Auto-register wallet on connect
+  useEffect(() => {
+    if (!wallet.isConnected || !wallet.address || registeredRef.current) return
+    registeredRef.current = true
+    fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wallet_address: wallet.address }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.balance !== undefined) {
+          setBalance(Number(data.balance))
+        }
+      })
+      .catch(() => {})
+  }, [wallet.isConnected, wallet.address])
+
+  // Reset on disconnect
+  useEffect(() => {
+    if (!wallet.isConnected) {
+      registeredRef.current = false
+      setBalance(0)
+    }
+  }, [wallet.isConnected])
+
   // Fetch balance from server
   const { data: balanceData, mutate: mutateBalance } = useSWR(
-    wallet.isConnected ? `/api/balance?wallet_address=${wallet.address}` : null,
+    wallet.isConnected ? `/api/balance?wallet=${wallet.address}` : null,
     fetcher
   )
 
@@ -53,49 +80,50 @@ export default function GachaPage() {
     })) ?? []
 
   const handleSpin = useCallback(async () => {
-    if (isSpinning || !wallet.isConnected || !wallet.address || balance < SPIN_COST) return
+    if (isSpinning || !wallet.isConnected || !wallet.address || balance < SPIN.COST) return
 
     setIsSpinning(true)
     setShowCapsule(false)
     setShowReward(false)
     setRewardItem(null)
 
-    // Phase 1: Machine shakes (0-2s)
-    setTimeout(async () => {
-      setIsSpinning(false)
-      setShowCapsule(true)
+    // Phase 1: Machine shakes (2s)
+    await new Promise((r) => setTimeout(r, 2000))
 
-      // Phase 2: Call API, then reveal
-      try {
-        const res = await fetch("/api/spin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet_address: wallet.address }),
-        })
-        const result = await res.json()
+    setIsSpinning(false)
+    setShowCapsule(true)
 
-        if (!res.ok) {
-          throw new Error(result.error || "Spin failed")
-        }
+    // Phase 2: Call API, then reveal
+    try {
+      const res = await fetch("/api/spin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet_address: wallet.address }),
+      })
+      const result = await res.json()
 
-        // Update balance from server response
-        if (result.new_balance !== undefined) {
-          setBalance(result.new_balance)
-        }
-
-        setTimeout(() => {
-          setRewardItem({ ...result, historyId: result.history_id })
-          setShowCapsule(false)
-          setShowReward(true)
-          // Revalidate history so recent drops and collection update
-          mutate(`/api/history?wallet=${wallet.address}`)
-        }, 1200)
-      } catch {
-        setShowCapsule(false)
-        // Refresh balance from server in case of error
-        mutateBalance()
+      if (!res.ok) {
+        throw new Error(result.error || "Spin failed")
       }
-    }, 2000)
+
+      // Update balance from server response
+      if (result.new_balance !== undefined) {
+        setBalance(result.new_balance)
+      }
+
+      // Wait for capsule reveal
+      await new Promise((r) => setTimeout(r, 1200))
+
+      setRewardItem({ ...result, historyId: result.history_id })
+      setShowCapsule(false)
+      setShowReward(true)
+      // Revalidate history so recent drops and collection update
+      mutate(`/api/history?wallet=${wallet.address}`)
+    } catch {
+      setShowCapsule(false)
+      // Refresh balance from server in case of error
+      mutateBalance()
+    }
   }, [isSpinning, wallet.isConnected, wallet.address, balance, mutateBalance])
 
   const handleCloseReward = useCallback(() => {
@@ -125,22 +153,6 @@ export default function GachaPage() {
         setBalance(result.new_balance)
         mutate(`/api/history?wallet=${wallet.address}`)
       }
-      return result
-    } catch {
-      return { error: "Network error" }
-    }
-  }, [wallet.address])
-
-  // Claim NFT
-  const handleClaimNFT = useCallback(async (historyId: string) => {
-    if (!wallet.address) return
-    try {
-      const res = await fetch("/api/claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet_address: wallet.address, spin_history_id: historyId }),
-      })
-      const result = await res.json()
       return result
     } catch {
       return { error: "Network error" }
@@ -216,7 +228,7 @@ export default function GachaPage() {
         {/* Decorative heading */}
         <div className="text-center mb-5 sm:mb-8">
           <p className="text-[10px] sm:text-xs font-sans tracking-[0.2em] sm:tracking-[0.3em] text-muted-foreground uppercase mb-1 sm:mb-2">
-            Spin the machine, collect rare NFTs
+            Spin the machine, collect rare items
           </p>
           <h2 className="text-2xl sm:text-3xl font-sans text-foreground text-balance">
             What will you get today?
@@ -249,6 +261,18 @@ export default function GachaPage() {
         <div className="border-t-2 border-border" />
       </div>
 
+      {/* GVCoin Exchange Panel */}
+      {wallet.isConnected && (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 w-full py-4">
+          <GVCoinPanel
+            walletAddress={wallet.address}
+            isConnected={wallet.isConnected}
+            balance={balance}
+            onBalanceUpdate={handleReactorBalanceUpdate}
+          />
+        </div>
+      )}
+
       {/* Collection */}
       <CollectionGrid items={wonItems} onSell={handleSell} onConvert={handleConvert} />
 
@@ -256,6 +280,7 @@ export default function GachaPage() {
       <EtherReactor
         walletAddress={wallet.address}
         isConnected={wallet.isConnected}
+        balance={balance}
         onBalanceUpdate={handleReactorBalanceUpdate}
       />
 
@@ -265,7 +290,6 @@ export default function GachaPage() {
         isOpen={showReward}
         onClose={handleCloseReward}
         onSpinAgain={handleSpinAgain}
-        onClaimNFT={handleClaimNFT}
       />
     </div>
   )

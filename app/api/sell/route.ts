@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
-import { isValidEthAddress, rateLimit, getSellPrice } from "@/lib/security"
+import { isValidEthAddress, rateLimit } from "@/lib/security"
+import { SELL_PRICES } from "@/lib/economy"
 
 /**
  * POST /api/sell - Sell an item back to the shop for GACHA tokens
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
   }
 
   // Calculate sell price based on rarity
-  const sellPrice = getSellPrice(historyItem.items.rarity)
+  const sellPrice = SELL_PRICES[historyItem.items.rarity] ?? 5
 
   // Get current balance
   const { data: walletData } = await supabase

@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { Coins } from "lucide-react"
+import { SPIN } from "@/lib/economy"
 
 interface MachineDisplayProps {
   isSpinning: boolean
@@ -20,7 +21,7 @@ export function MachineDisplay({ isSpinning, showCapsule }: MachineDisplayProps)
         {/* Machine Image */}
         <div className="relative aspect-[3/4] w-full">
           <Image
-            src="/images/gacha-machine.svg"
+            src="/images/gacha-machine.png"
             alt="Gachapon vending machine"
             fill
             sizes="(max-width: 640px) 280px, 384px"
@@ -44,7 +45,7 @@ export function MachineDisplay({ isSpinning, showCapsule }: MachineDisplayProps)
               <div className="animate-capsule-drop will-change-transform">
                 <div className="relative w-16 h-16 sm:w-24 sm:h-24">
                   <Image
-                    src="/images/capsule.svg"
+                    src="/images/capsule.png"
                     alt="Gachapon capsule"
                     fill
                     sizes="(max-width: 640px) 64px, 96px"
@@ -60,7 +61,7 @@ export function MachineDisplay({ isSpinning, showCapsule }: MachineDisplayProps)
       {/* Price Tag */}
       <div className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 border-2 border-foreground rounded-full bg-accent shadow-hard-sm">
         <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-foreground" />
-        <span className="font-sans text-xs sm:text-sm text-accent-foreground">1 Spin = 10 GACHA</span>
+        <span className="font-sans text-xs sm:text-sm text-accent-foreground">1 Spin = {SPIN.COST} GACHA</span>
       </div>
     </div>
   )

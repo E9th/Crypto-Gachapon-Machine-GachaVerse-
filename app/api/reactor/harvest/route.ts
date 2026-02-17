@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { isValidEthAddress, rateLimit } from "@/lib/security"
-import { REACTOR } from "@/lib/economy"
+import { REACTOR, getUpgradeForLevel } from "@/lib/economy"
 
 /**
  * POST /api/reactor/harvest
@@ -106,15 +106,16 @@ async function processHarvest(
     }
   }
 
-  // Calculate current energy with regen
+  // Calculate current energy with regen (includes level-based regen bonus)
   const lastRegen = new Date(energyData.last_regen_at)
   const elapsedSec = (now.getTime() - lastRegen.getTime()) / 1000
-  const regenAmount = elapsedSec * REACTOR.REGEN_PER_SECOND
+  const levelUpgrade = getUpgradeForLevel(energyData.level ?? 1)
+  const regenRate = REACTOR.REGEN_PER_SECOND + levelUpgrade.regenBonus
+  const regenAmount = elapsedSec * regenRate
   const maxEnergy = Number(energyData.max_energy)
   const currentEnergy = Math.min(maxEnergy, Number(energyData.energy) + regenAmount)
 
   // How many clicks can actually be consumed?
-  const energyNeeded = clicks * REACTOR.ENERGY_PER_CLICK
   const actualClicks = Math.min(clicks, Math.floor(currentEnergy / REACTOR.ENERGY_PER_CLICK))
 
   if (actualClicks <= 0) {
@@ -126,9 +127,10 @@ async function processHarvest(
   }
 
   const energyConsumed = actualClicks * REACTOR.ENERGY_PER_CLICK
-  const coinsEarned = actualClicks * REACTOR.COINS_PER_CLICK
+  // Use level-based clicks-per-coin ratio (50 clicks = 1 coin at level 1)
+  const coinsEarned = Math.floor(actualClicks / levelUpgrade.clicksPerCoin)
   const newEnergy = currentEnergy - energyConsumed
-  const newTotalHarvested = Number(energyData.total_harvested) + coinsEarned
+  const newTotalHarvested = Number(energyData.total_harvested) + actualClicks
 
   // Update energy
   const { error: updateError } = await supabase
@@ -170,11 +172,12 @@ async function processHarvest(
       new_balance: newBalance,
       energy: Math.floor(newEnergy * 100) / 100,
       max_energy: maxEnergy,
+      level: energyData.level,
       total_harvested: newTotalHarvested,
     })
   } else {
     // Auto-create wallet balance
-    const { error: insertBalanceError } = await supabase
+    await supabase
       .from("wallet_balances")
       .insert({
         wallet_address: walletAddress,
@@ -188,6 +191,7 @@ async function processHarvest(
       new_balance: coinsEarned,
       energy: Math.floor(newEnergy * 100) / 100,
       max_energy: maxEnergy,
+      level: energyData.level,
       total_harvested: newTotalHarvested,
     })
   }

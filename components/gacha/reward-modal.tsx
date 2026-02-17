@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import Image from "next/image"
-import { X, RotateCcw, Download, Loader2, Check, ExternalLink } from "lucide-react"
+import { X, RotateCcw } from "lucide-react"
 import type { GachaItem } from "@/lib/gacha/types"
 
 interface RewardModalProps {
@@ -10,11 +10,6 @@ interface RewardModalProps {
   isOpen: boolean
   onClose: () => void
   onSpinAgain: () => void
-  onClaimNFT?: (historyId: string) => Promise<{
-    success?: boolean
-    error?: string
-    nft?: { token_id: number; tx_hash: string; contract_address: string }
-  } | undefined>
 }
 
 const rarityConfig: Record<string, { label: string; bg: string; border: string; text: string }> = {
@@ -65,22 +60,7 @@ function Confetti() {
   )
 }
 
-export function RewardModal({ item, isOpen, onClose, onSpinAgain, onClaimNFT }: RewardModalProps) {
-  const [isClaiming, setIsClaiming] = useState(false)
-  const [claimResult, setClaimResult] = useState<{
-    success: boolean
-    message: string
-    txHash?: string
-  } | null>(null)
-
-  // Reset claim state when modal opens/closes
-  useEffect(() => {
-    if (!isOpen) {
-      setIsClaiming(false)
-      setClaimResult(null)
-    }
-  }, [isOpen])
-
+export function RewardModal({ item, isOpen, onClose, onSpinAgain }: RewardModalProps) {
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -164,69 +144,14 @@ export function RewardModal({ item, isOpen, onClose, onSpinAgain, onClaimNFT }: 
               {rarity.label}
             </span>
 
-            {/* Claim result */}
-            {claimResult && (
-              <div
-                className={`w-full mb-3 p-2.5 rounded-xl border text-[10px] sm:text-xs font-sans text-center ${
-                  claimResult.success
-                    ? "border-green-400 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-                    : "border-red-400 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
-                }`}
-              >
-                <p>{claimResult.message}</p>
-                {claimResult.txHash && (
-                  <p className="mt-1 flex items-center justify-center gap-1 text-[9px] opacity-80">
-                    <ExternalLink className="w-2.5 h-2.5" />
-                    TX: {claimResult.txHash.slice(0, 10)}...{claimResult.txHash.slice(-6)}
-                  </p>
-                )}
-              </div>
-            )}
-
+            {/* Action Buttons */}
             <div className="flex gap-2 sm:gap-3 w-full">
               <button
-                onClick={async () => {
-                  if (!onClaimNFT || !item?.historyId || isClaiming || claimResult?.success) return
-                  setIsClaiming(true)
-                  setClaimResult(null)
-                  const result = await onClaimNFT(item.historyId)
-                  setIsClaiming(false)
-                  if (result?.success && result.nft) {
-                    setClaimResult({
-                      success: true,
-                      message: `NFT Minted! Token #${result.nft.token_id}`,
-                      txHash: result.nft.tx_hash,
-                    })
-                  } else {
-                    setClaimResult({
-                      success: false,
-                      message: result?.error || "Failed to claim NFT",
-                    })
-                  }
-                }}
-                disabled={isClaiming || claimResult?.success === true}
-                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 rounded-xl border-2 border-foreground font-sans text-xs sm:text-sm shadow-hard-sm transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none touch-manipulation ${
-                  claimResult?.success
-                    ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300"
-                    : "bg-secondary text-secondary-foreground"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                onClick={onClose}
+                className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 rounded-xl border-2 border-foreground bg-secondary text-secondary-foreground font-sans text-xs sm:text-sm shadow-hard-sm transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none touch-manipulation"
               >
-                {isClaiming ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                    Minting...
-                  </>
-                ) : claimResult?.success ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    Claimed!
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    Claim NFT
-                  </>
-                )}
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                Close
               </button>
               <button
                 onClick={onSpinAgain}
