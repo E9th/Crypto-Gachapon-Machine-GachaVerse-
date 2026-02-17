@@ -134,6 +134,7 @@ export function RewardModal({ item, isOpen, onClose, onSpinAgain }: RewardModalP
                 fill
                 sizes="(max-width: 640px) 144px, 192px"
                 className="object-cover"
+                unoptimized
               />
             </div>
 

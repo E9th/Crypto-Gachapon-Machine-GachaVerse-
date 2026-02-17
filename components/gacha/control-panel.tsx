@@ -120,6 +120,7 @@ export function ControlPanel({
                     fill
                     sizes="(max-width: 640px) 32px, 40px"
                     className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <div className="flex-1 min-w-0">

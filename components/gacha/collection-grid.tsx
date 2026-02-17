@@ -156,6 +156,7 @@ export function CollectionGrid({ items, onSell, onConvert }: CollectionGridProps
                       fill
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                       className="object-cover"
+                      unoptimized
                     />
                     <span
                       className={`absolute top-1.5 right-1.5 sm:top-2 sm:right-2 text-[9px] sm:text-[10px] font-sans px-1.5 sm:px-2 py-0.5 rounded-full border border-foreground ${rarityBadge[item.rarity]}`}
