@@ -106,9 +106,21 @@ export async function POST(request: Request) {
   let txHash: string | null = null
   let mintStatus = "pending"
 
-  const contractAddress = process.env.NEXT_PUBLIC_GVCOIN_ADDRESS
-  const minterKey = process.env.GVCOIN_MINTER_PRIVATE_KEY
-  const rpcUrl = process.env.GVCOIN_RPC_URL || GVCOIN.RPC_URL
+  const contractAddress = process.env.NEXT_PUBLIC_GVCOIN_ADDRESS?.trim()
+  const rawMinterKey = process.env.GVCOIN_MINTER_PRIVATE_KEY?.trim()
+  const rpcUrl = process.env.GVCOIN_RPC_URL?.trim() || GVCOIN.RPC_URL
+
+  // Normalize private key: ensure 0x prefix and validate length
+  let minterKey: string | undefined
+  if (rawMinterKey) {
+    const cleaned = rawMinterKey.startsWith("0x") ? rawMinterKey : `0x${rawMinterKey}`
+    // Valid private key = 0x + 64 hex chars = 66 chars total
+    if (/^0x[0-9a-fA-F]{64}$/.test(cleaned)) {
+      minterKey = cleaned
+    } else {
+      console.error("GVCoin: GVCOIN_MINTER_PRIVATE_KEY is not a valid 32-byte hex private key (length:", cleaned.length, ")")
+    }
+  }
 
   if (contractAddress && contractAddress !== "0x0000000000000000000000000000000000000000" && minterKey) {
     try {
@@ -134,8 +146,11 @@ export async function POST(request: Request) {
       // Admin can retry later
     }
   } else {
-    // Contract not deployed yet — mark as pending for manual processing
-    mintStatus = "no_contract"
+    // Contract not deployed or invalid minter key — mark as pending
+    mintStatus = minterKey ? "no_contract" : "mint_failed"
+    if (!minterKey && rawMinterKey) {
+      console.error("GVCoin: Skipping mint — invalid private key format")
+    }
   }
 
   // Update exchange record with status

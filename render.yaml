@@ -16,3 +16,11 @@ services:
         generateValue: true
       - key: NODE_ENV
         value: production
+      - key: NEXT_PUBLIC_GVCOIN_ADDRESS
+        sync: false
+      - key: GVCOIN_MINTER_PRIVATE_KEY
+        sync: false
+      - key: GVCOIN_RPC_URL
+        value: https://rpc.sepolia.org
+      - key: PORT
+        value: 10000
