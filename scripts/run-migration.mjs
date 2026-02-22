@@ -97,23 +97,37 @@ const statements = [
   `ALTER TABLE public.items ADD CONSTRAINT items_rarity_check CHECK (rarity IN ('Common', 'Rare', 'SSR', 'UR'))`,
 
   // Fix item image paths (old SVGs → correct PNGs)
-  `UPDATE public.items SET image_url = '/images/nft-common_01.png' WHERE name = 'Blue Slime'`,
-  `UPDATE public.items SET image_url = '/images/nft-common_02.png' WHERE name = 'Green Sprite'`,
-  `UPDATE public.items SET image_url = '/images/nft-common_03.png' WHERE name = 'Cloud Puff'`,
-  `UPDATE public.items SET image_url = '/images/nft-common_04.png' WHERE name = 'Pink Mochi'`,
-  `UPDATE public.items SET image_url = '/images/nft-common_05.png' WHERE name = 'Star Jelly'`,
-  `UPDATE public.items SET image_url = '/images/nft-rare_01.png'   WHERE name = 'Sakura Fox'`,
-  `UPDATE public.items SET image_url = '/images/nft-rare_02.png'   WHERE name = 'Moon Rabbit'`,
-  `UPDATE public.items SET image_url = '/images/nft-rare_03.png'   WHERE name = 'Crystal Koi'`,
-  `UPDATE public.items SET image_url = '/images/nft-ssr_01.png'    WHERE name = 'Golden Dragon'`,
-  `UPDATE public.items SET image_url = '/images/nft-ssr_02.png'    WHERE name = 'Phoenix Lord'`,
-  `UPDATE public.items SET image_url = '/images/nft-ssr_03.png'    WHERE name = 'Galactic Neko'`,
+  `UPDATE public.items SET image_url = '/images/nft-common_01.png' WHERE name = 'Little Music Lover Duck'`,
+  `UPDATE public.items SET image_url = '/images/nft-common_02.png' WHERE name = 'Sweet Pastel Candy'`,
+  `UPDATE public.items SET image_url = '/images/nft-common_03.png' WHERE name = 'Rainbow on Fluffy Clouds'`,
+  `UPDATE public.items SET image_url = '/images/nft-common_04.png' WHERE name = 'Pink Heart Gem Ring'`,
+  `UPDATE public.items SET image_url = '/images/nft-common_05.png' WHERE name = 'Smiling Little Star'`,
+  `UPDATE public.items SET image_url = '/images/nft-rare_01.png'   WHERE name = 'Pink Bunny with Heart Wand'`,
+  `UPDATE public.items SET image_url = '/images/nft-rare_02.png'   WHERE name = 'Little Wizard Cat'`,
+  `UPDATE public.items SET image_url = '/images/nft-rare_03.png'   WHERE name = 'Tiny Buddy Robot'`,
+  `UPDATE public.items SET image_url = '/images/nft-ssr_01.png'    WHERE name = 'Joyful Friends Party'`,
+  `UPDATE public.items SET image_url = '/images/nft-ssr_02.png'    WHERE name = 'Little Rainbow Unicorn'`,
+  `UPDATE public.items SET image_url = '/images/nft-ssr_03.png'    WHERE name = 'Little Fire-Breathing Golden Dragon'`,
   // Fallback: generic SVG names
   `UPDATE public.items SET image_url = '/images/nft-common_01.png' WHERE image_url LIKE '%nft-common.svg%'`,
   `UPDATE public.items SET image_url = '/images/nft-rare_01.png'   WHERE image_url LIKE '%nft-rare.svg%'`,
   `UPDATE public.items SET image_url = '/images/nft-ssr_01.png'    WHERE image_url LIKE '%nft-ssr.svg%'`,
   // Add UR item
-  `INSERT INTO items (name, rarity, image_url, drop_rate) VALUES ('Void Emperor', 'UR', '/images/nft-ur_01.png', 0.005) ON CONFLICT DO NOTHING`,
+  `INSERT INTO items (name, rarity, image_url, drop_rate) VALUES ('Crystal Snow Nine-Tailed Fox', 'UR', '/images/nft-ur_01.png', 0.005) ON CONFLICT DO NOTHING`,
+
+  // ── 008: Rename items (match by image_url for reliability) ──
+  `UPDATE public.items SET name = 'Little Music Lover Duck'              WHERE image_url = '/images/nft-common_01.png'`,
+  `UPDATE public.items SET name = 'Sweet Pastel Candy'                   WHERE image_url = '/images/nft-common_02.png'`,
+  `UPDATE public.items SET name = 'Rainbow on Fluffy Clouds'             WHERE image_url = '/images/nft-common_03.png'`,
+  `UPDATE public.items SET name = 'Pink Heart Gem Ring'                  WHERE image_url = '/images/nft-common_04.png'`,
+  `UPDATE public.items SET name = 'Smiling Little Star'                  WHERE image_url = '/images/nft-common_05.png'`,
+  `UPDATE public.items SET name = 'Pink Bunny with Heart Wand'           WHERE image_url = '/images/nft-rare_01.png'`,
+  `UPDATE public.items SET name = 'Little Wizard Cat'                    WHERE image_url = '/images/nft-rare_02.png'`,
+  `UPDATE public.items SET name = 'Tiny Buddy Robot'                     WHERE image_url = '/images/nft-rare_03.png'`,
+  `UPDATE public.items SET name = 'Joyful Friends Party'                 WHERE image_url = '/images/nft-ssr_01.png'`,
+  `UPDATE public.items SET name = 'Little Rainbow Unicorn'               WHERE image_url = '/images/nft-ssr_02.png'`,
+  `UPDATE public.items SET name = 'Little Fire-Breathing Golden Dragon'  WHERE image_url = '/images/nft-ssr_03.png'`,
+  `UPDATE public.items SET name = 'Crystal Snow Nine-Tailed Fox'         WHERE image_url = '/images/nft-ur_01.png'`,
 
   // Create reactor_upgrades table
   `CREATE TABLE IF NOT EXISTS public.reactor_upgrades (
