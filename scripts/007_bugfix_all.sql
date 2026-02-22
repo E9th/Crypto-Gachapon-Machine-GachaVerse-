@@ -10,17 +10,17 @@ ALTER TABLE public.items ADD CONSTRAINT items_rarity_check CHECK (rarity IN ('Co
 
 -- ─── 2) Fix item image paths (old SVGs → correct PNGs) ───
 -- Update all existing items to use the correct PNG images
-UPDATE public.items SET image_url = '/images/nft-common_01.png' WHERE name = 'Blue Slime';
-UPDATE public.items SET image_url = '/images/nft-common_02.png' WHERE name = 'Green Sprite';
-UPDATE public.items SET image_url = '/images/nft-common_03.png' WHERE name = 'Cloud Puff';
-UPDATE public.items SET image_url = '/images/nft-common_04.png' WHERE name = 'Pink Mochi';
-UPDATE public.items SET image_url = '/images/nft-common_05.png' WHERE name = 'Star Jelly';
-UPDATE public.items SET image_url = '/images/nft-rare_01.png'   WHERE name = 'Sakura Fox';
-UPDATE public.items SET image_url = '/images/nft-rare_02.png'   WHERE name = 'Moon Rabbit';
-UPDATE public.items SET image_url = '/images/nft-rare_03.png'   WHERE name = 'Crystal Koi';
-UPDATE public.items SET image_url = '/images/nft-ssr_01.png'    WHERE name = 'Golden Dragon';
-UPDATE public.items SET image_url = '/images/nft-ssr_02.png'    WHERE name = 'Phoenix Lord';
-UPDATE public.items SET image_url = '/images/nft-ssr_03.png'    WHERE name = 'Galactic Neko';
+UPDATE public.items SET image_url = '/images/nft-common_01.png' WHERE name = 'Little Music Lover Duck';
+UPDATE public.items SET image_url = '/images/nft-common_02.png' WHERE name = 'Sweet Pastel Candy';
+UPDATE public.items SET image_url = '/images/nft-common_03.png' WHERE name = 'Rainbow on Fluffy Clouds';
+UPDATE public.items SET image_url = '/images/nft-common_04.png' WHERE name = 'Pink Heart Gem Ring';
+UPDATE public.items SET image_url = '/images/nft-common_05.png' WHERE name = 'Smiling Little Sta';
+UPDATE public.items SET image_url = '/images/nft-rare_01.png'   WHERE name = 'Pink Bunny with Heart Wand';
+UPDATE public.items SET image_url = '/images/nft-rare_02.png'   WHERE name = 'Little Wizard Cat';
+UPDATE public.items SET image_url = '/images/nft-rare_03.png'   WHERE name = 'Tiny Buddy Robot';
+UPDATE public.items SET image_url = '/images/nft-ssr_01.png'    WHERE name = 'Joyful Friends Party';
+UPDATE public.items SET image_url = '/images/nft-ssr_02.png'    WHERE name = 'Little Rainbow Unicorn';
+UPDATE public.items SET image_url = '/images/nft-ssr_03.png'    WHERE name = 'Little Fire-Breathing Golden Dragon';
 
 -- Fallback: if items were seeded with generic SVG names instead of character names
 UPDATE public.items SET image_url = '/images/nft-common_01.png' WHERE image_url LIKE '%nft-common.svg%';
@@ -29,7 +29,7 @@ UPDATE public.items SET image_url = '/images/nft-ssr_01.png'    WHERE image_url 
 
 -- ─── 3) Add UR item ───
 INSERT INTO items (name, rarity, image_url, drop_rate) VALUES
-  ('Void Emperor', 'UR', '/images/nft-ur_01.png', 0.005)
+  ('Crystal Snow Nine-Tailed Fox', 'UR', '/images/nft-ur_01.png', 0.005)
 ON CONFLICT DO NOTHING;
 
 -- ─── 4) Create reactor_upgrades table (from 005) ───
