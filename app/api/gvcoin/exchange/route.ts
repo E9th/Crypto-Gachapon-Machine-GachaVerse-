@@ -108,7 +108,12 @@ export async function POST(request: Request) {
 
   const contractAddress = process.env.NEXT_PUBLIC_GVCOIN_ADDRESS?.trim()
   const rawMinterKey = process.env.GVCOIN_MINTER_PRIVATE_KEY?.trim()
-  const rpcUrl = process.env.GVCOIN_RPC_URL?.trim() || GVCOIN.RPC_URL
+  const rpcUrl = process.env.GVCOIN_RPC_URL?.trim()
+
+  // Build RPC list: env var first, then fallbacks
+  const rpcUrls = rpcUrl
+    ? [rpcUrl, ...GVCOIN.RPC_URLS.filter(u => u !== rpcUrl)]
+    : [...GVCOIN.RPC_URLS]
 
   // Normalize private key: ensure 0x prefix and validate length
   let minterKey: string | undefined
@@ -128,19 +133,38 @@ export async function POST(request: Request) {
       const { ethers } = await import("ethers")
       const abi = (await import("@/lib/gvcoin-abi.json")).default
 
-      const provider = new ethers.JsonRpcProvider(rpcUrl)
-      const signer = new ethers.Wallet(minterKey, provider)
-      const contract = new ethers.Contract(contractAddress, abi, signer)
+      // Try each RPC until one works
+      let lastError: any = null
+      for (const url of rpcUrls) {
+        try {
+          const provider = new ethers.JsonRpcProvider(url, undefined, {
+            staticNetwork: ethers.Network.from(GVCOIN.CHAIN_ID),
+            batchMaxCount: 1,
+          })
+          const signer = new ethers.Wallet(minterKey, provider)
+          const contract = new ethers.Contract(contractAddress, abi, signer)
 
-      // Mint with 18 decimals
-      const mintAmount = ethers.parseUnits(gvcAmount.toString(), 18)
-      const tx = await contract.mint(walletAddress, mintAmount, "gacha_exchange")
-      await tx.wait()
+          // Mint with 18 decimals
+          const mintAmount = ethers.parseUnits(gvcAmount.toString(), 18)
+          const tx = await contract.mint(walletAddress, mintAmount, "gacha_exchange")
+          await tx.wait()
 
-      txHash = tx.hash
-      mintStatus = "minted"
+          txHash = tx.hash
+          mintStatus = "minted"
+          lastError = null
+          break // Success
+        } catch (err: any) {
+          lastError = err
+          console.warn(`GVCoin mint failed with RPC ${url}:`, err.shortMessage || err.message)
+          continue // Try next RPC
+        }
+      }
+
+      if (lastError && mintStatus !== "minted") {
+        throw lastError
+      }
     } catch (err) {
-      console.error("GVCoin mint failed:", err)
+      console.error("GVCoin mint failed (all RPCs):", err)
       mintStatus = "mint_failed"
       // Don't refund — the exchange is still valid, just on-chain delivery failed
       // Admin can retry later

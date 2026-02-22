@@ -31,7 +31,7 @@ NEXT_PUBLIC_GVCOIN_ADDRESS=0xYOUR_DEPLOYED_CONTRACT_ADDRESS
 GVCOIN_MINTER_PRIVATE_KEY=0xYOUR_MINTER_PRIVATE_KEY
 
 # Sepolia RPC (or use your own Alchemy/Infura endpoint)
-GVCOIN_RPC_URL=https://rpc.sepolia.org
+GVCOIN_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
 ```
 
 ## Step 3: Add Token to MetaMask

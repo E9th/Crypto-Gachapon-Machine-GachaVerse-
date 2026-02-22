@@ -60,9 +60,10 @@ export async function POST(request: Request) {
   const { ethers } = await import("ethers")
   const abi = (await import("@/lib/gvcoin-abi.json")).default
 
-  const provider = new ethers.JsonRpcProvider(rpcUrl)
-  const signer = new ethers.Wallet(minterKey, provider)
-  const contract = new ethers.Contract(contractAddress, abi, signer)
+  // Build RPC list: env var first, then fallbacks
+  const rpcUrls = rpcUrl
+    ? [rpcUrl, ...GVCOIN.RPC_URLS.filter(u => u !== rpcUrl)]
+    : [...GVCOIN.RPC_URLS]
 
   const results: Array<{
     id: string
@@ -74,37 +75,52 @@ export async function POST(request: Request) {
 
   // Retry each pending exchange
   for (const exchange of pendingExchanges) {
-    try {
-      const mintAmount = ethers.parseUnits(
-        Number(exchange.gvc_amount).toString(),
-        18
-      )
-      const tx = await contract.mint(
-        exchange.wallet_address,
-        mintAmount,
-        "gacha_exchange_retry"
-      )
-      await tx.wait()
+    let minted = false
+    for (const url of rpcUrls) {
+      try {
+        const provider = new ethers.JsonRpcProvider(url, undefined, {
+          staticNetwork: ethers.Network.from(GVCOIN.CHAIN_ID),
+          batchMaxCount: 1,
+        })
+        const signer = new ethers.Wallet(minterKey, provider)
+        const contract = new ethers.Contract(contractAddress, abi, signer)
 
-      // Update record
-      await supabase
-        .from("gvcoin_exchanges")
-        .update({
+        const mintAmount = ethers.parseUnits(
+          Number(exchange.gvc_amount).toString(),
+          18
+        )
+        const tx = await contract.mint(
+          exchange.wallet_address,
+          mintAmount,
+          "gacha_exchange_retry"
+        )
+        await tx.wait()
+
+        // Update record
+        await supabase
+          .from("gvcoin_exchanges")
+          .update({
+            status: "minted",
+            tx_hash: tx.hash,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", exchange.id)
+
+        results.push({
+          id: exchange.id,
+          gvc_amount: Number(exchange.gvc_amount),
           status: "minted",
           tx_hash: tx.hash,
-          updated_at: new Date().toISOString(),
         })
-        .eq("id", exchange.id)
+        minted = true
+        break // Success, move to next exchange
+      } catch (err: any) {
+        console.warn(`Retry mint failed for ${exchange.id} with RPC ${url}:`, err.shortMessage || err.message)
+        continue // Try next RPC
+      }
+    }
 
-      results.push({
-        id: exchange.id,
-        gvc_amount: Number(exchange.gvc_amount),
-        status: "minted",
-        tx_hash: tx.hash,
-      })
-    } catch (err: any) {
-      console.error(`Retry mint failed for exchange ${exchange.id}:`, err)
-
+    if (!minted) {
       await supabase
         .from("gvcoin_exchanges")
         .update({
@@ -118,7 +134,7 @@ export async function POST(request: Request) {
         gvc_amount: Number(exchange.gvc_amount),
         status: "mint_failed",
         tx_hash: null,
-        error: err.shortMessage || err.message || "Unknown error",
+        error: "All RPC providers failed",
       })
     }
   }

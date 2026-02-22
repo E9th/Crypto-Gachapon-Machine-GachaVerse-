@@ -5,6 +5,7 @@ services:
     plan: free
     buildCommand: npm install -g pnpm && pnpm install && pnpm build
     startCommand: pnpm start
+    healthCheckPath: /
     envVars:
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
@@ -21,6 +22,6 @@ services:
       - key: GVCOIN_MINTER_PRIVATE_KEY
         sync: false
       - key: GVCOIN_RPC_URL
-        value: https://rpc.sepolia.org
+        value: https://ethereum-sepolia-rpc.publicnode.com
       - key: PORT
         value: 10000

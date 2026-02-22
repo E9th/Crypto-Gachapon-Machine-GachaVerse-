@@ -114,8 +114,15 @@ export const GVCOIN = {
   DECIMALS: 18,
   /** Sepolia testnet chain ID */
   CHAIN_ID: 11155111,
-  /** Sepolia RPC URL */
-  RPC_URL: "https://rpc.sepolia.org",
+  /** Sepolia RPC URLs (fallback order) */
+  RPC_URLS: [
+    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://sepolia.drpc.org",
+    "https://rpc2.sepolia.org",
+    "https://rpc.sepolia.org",
+  ] as readonly string[],
+  /** Primary Sepolia RPC URL */
+  RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com",
   /** Exchange rate: GACHA coins per 1 GVCoin */
   GACHA_PER_GVCOIN: 100,
   /** Minimum GACHA to exchange */
