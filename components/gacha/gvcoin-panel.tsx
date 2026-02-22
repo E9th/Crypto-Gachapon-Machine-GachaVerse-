@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { Coins, ArrowRightLeft, Plus, Loader2, ExternalLink, Check, AlertCircle } from "lucide-react"
+import { Coins, ArrowRightLeft, Plus, Loader2, ExternalLink, Check, AlertCircle, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { GVCOIN } from "@/lib/economy"
 
@@ -16,7 +16,9 @@ export function GVCoinPanel({ walletAddress, isConnected, balance, onBalanceUpda
   const [isOpen, setIsOpen] = useState(false)
   const [exchangeAmount, setExchangeAmount] = useState("")
   const [isExchanging, setIsExchanging] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false)
   const [gvcBalance, setGvcBalance] = useState(0)
+  const [pendingCount, setPendingCount] = useState(0)
   const [result, setResult] = useState<{
     success: boolean
     message: string
@@ -40,6 +42,11 @@ export function GVCoinPanel({ walletAddress, isConnected, balance, onBalanceUpda
             0
           )
           setGvcBalance(total)
+          // Count unminted exchanges
+          const pending = data.exchanges.filter(
+            (ex: { status: string }) => ex.status === "pending" || ex.status === "mint_failed" || ex.status === "no_contract"
+          ).length
+          setPendingCount(pending)
         }
       })
       .catch(() => {})
@@ -114,6 +121,47 @@ export function GVCoinPanel({ walletAddress, isConnected, balance, onBalanceUpda
       // User rejected
     }
   }, [])
+
+  const handleRetryMint = useCallback(async () => {
+    if (!walletAddress || isRetrying) return
+    setIsRetrying(true)
+    setResult(null)
+
+    try {
+      const res = await fetch("/api/gvcoin/retry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet_address: walletAddress }),
+      })
+      const data = await res.json()
+
+      if (data.minted > 0) {
+        setPendingCount((prev) => Math.max(0, prev - data.minted))
+        setResult({
+          success: true,
+          message: `Minted ${data.total_gvc_minted} GVC on-chain! (${data.minted} transactions)`,
+          txHash: data.results?.find((r: { status: string; tx_hash: string }) => r.status === "minted")?.tx_hash,
+        })
+      } else if (data.retried === 0) {
+        setResult({
+          success: true,
+          message: "No pending exchanges to retry.",
+        })
+      } else {
+        setResult({
+          success: false,
+          message: data.error || `Mint failed for ${data.failed} exchanges.`,
+        })
+      }
+    } catch {
+      setResult({
+        success: false,
+        message: "Network error. Please try again.",
+      })
+    } finally {
+      setIsRetrying(false)
+    }
+  }, [walletAddress, isRetrying])
 
   const handleSetMax = useCallback(() => {
     const maxExchangeable = Math.floor(balance / GVCOIN.GACHA_PER_GVCOIN) * GVCOIN.GACHA_PER_GVCOIN
@@ -258,13 +306,34 @@ export function GVCoinPanel({ walletAddress, isConnected, balance, onBalanceUpda
 
           {/* Add to MetaMask */}
           {contractReady && (
-            <button
-              onClick={handleAddToMetaMask}
-              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border text-[11px] font-sans text-muted-foreground hover:bg-muted transition-colors touch-manipulation"
-            >
-              <Plus className="w-3 h-3" />
-              Add GVC to MetaMask
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddToMetaMask}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border text-[11px] font-sans text-muted-foreground hover:bg-muted transition-colors touch-manipulation"
+              >
+                <Plus className="w-3 h-3" />
+                Add GVC to MetaMask
+              </button>
+              {pendingCount > 0 && (
+                <button
+                  onClick={handleRetryMint}
+                  disabled={isRetrying}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border-2 text-[11px] font-sans transition-all touch-manipulation",
+                    isRetrying
+                      ? "border-border bg-muted text-muted-foreground cursor-not-allowed"
+                      : "border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+                  )}
+                >
+                  {isRetrying ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3" />
+                  )}
+                  Mint {pendingCount} GVC
+                </button>
+              )}
+            </div>
           )}
 
           {/* Contract info */}
